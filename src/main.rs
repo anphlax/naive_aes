@@ -73,6 +73,7 @@ impl AES {
             self.state[3][i] = gmul(s0, 3) ^ s1 ^ s2 ^ gmul(s3, 2);
         }
     }
+
     fn aes_round(&mut self, round_key: &[[u8; 4]; 4]) {
         self.sub_bytes();
         self.shift_rows();
@@ -464,30 +465,6 @@ mod tests {
     }
 
     #[test]
-    fn test_aes_encrypt() {
-        let key = [
-            0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0xcf, 0x9f, 0x71, 0x61,
-            0x2c, 0x20,
-        ];
-        let input = [
-            0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37,
-            0x07, 0x34,
-        ];
-
-        let expanded_key = key_expansion(&key);
-        let mut aes = AES::new(key, input);
-
-        let ciphertext = aes.encrypt(&expanded_key);
-
-        let expected_ciphertext = [
-            0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb, 0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a,
-            0x0b, 0x32,
-        ];
-
-        assert_eq!(ciphertext, expected_ciphertext);
-    }
-
-    #[test]
     fn test_gmul_multiply_by_2() {
         let a: u8 = 0x57; // Example byte value
         let b: u8 = 0x02; // Multiply by 2 in Galois Field
@@ -509,5 +486,33 @@ mod tests {
         let expected_result = 0xf9; // Precomputed result of 0x57 * 3 in GF(2^8)
 
         assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_aes_encrypt() {
+        let key = [
+            0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
+        ];
+
+        let input = [
+            0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34,
+        ];
+
+        // Generate the expanded key from the key_expansion function
+        let expanded_key = key_expansion(&key);
+
+        // Assuming you have an AES struct that implements encryption
+        let mut aes = AES::new(key, input);
+
+        // Perform the encryption
+        let ciphertext = aes.encrypt(&expanded_key);
+
+        // Expected ciphertext from the AES encryption
+        let expected_ciphertext = [
+            0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb, 0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32,
+        ];
+
+        // Assert that the calculated ciphertext matches the expected result
+        assert_eq!(ciphertext, expected_ciphertext);
     }
 }
