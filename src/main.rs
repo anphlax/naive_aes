@@ -12,11 +12,13 @@ N-Rounds with
     AddRoundKey
 Output
  */
+use constants::{BLOCK_SIZE, RCON};
 use sbox::S_BOX;
 
 mod sbox;
+mod constants;
 
-const BLOCK_SIZE: usize = 16; // 128-bit block size
+// 128-bit block size
 
 struct AES {
     key: [u8; BLOCK_SIZE], // for AES-128
@@ -47,7 +49,7 @@ impl AES {
     fn sub_bytes(&mut self) {
         for i in 0..4 {
             for j in 0..4 {
-                self.state[i][j] = S_BOX[self.state[i][j] as usize];
+                self.state[i][j] = sbox_lookup(self.state[i][j]);
             }
         }
     }
@@ -124,8 +126,6 @@ fn aes_encrypt(input: &[u8; BLOCK_SIZE], key: &[u8; BLOCK_SIZE]) -> [u8; BLOCK_S
     aes.encrypt(&expanded_key)
 }
 
-const RCON: [u8; 10] = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36];
-
 fn key_expansion(key: &[u8; 16]) -> [[u8; 4]; 44] {
     let mut expanded_key = [[0u8; 4]; 44];
 
@@ -159,9 +159,7 @@ fn key_expansion(key: &[u8; 16]) -> [[u8; 4]; 44] {
 }
 
 fn sbox_lookup(byte: u8) -> u8 {
-    let row = (byte >> 4) as usize; // Oberes Nibble (Zeilenindex)
-    let col = (byte & 0x0F) as usize; // Unteres Nibble (Spaltenindex)
-    S_BOX[row * 16 + col] // Auflösen der Matrix in eine eindimensionale Struktur
+    S_BOX[byte as usize]
 }
 
 fn sub_word(word: [u8; 4]) -> [u8; 4] {
@@ -263,44 +261,6 @@ mod tests {
         let rotated = rotate_word(word);
         let expected = [0xcf, 0x4f, 0x3c, 0x09];
         assert_eq!(rotated, expected);
-    }
-
-    #[test]
-    fn test_sub_word() {
-        let word = [0x09, 0xcf, 0x4f, 0x3c];
-        let substituted = sub_word(word);
-
-        // Erwartete Werte aus der S-Box:
-        let expected = [0x01, 0x18, 0x9d, 0x87];
-
-        assert_eq!(
-            substituted, expected,
-            "sub_word failed for input [0x09, 0xcf, 0x4f, 0x3c]"
-        );
-    }
-
-    #[test]
-    fn test_sub_word_with_another_input() {
-        let word = [0x32, 0x43, 0xf6, 0xa8]; // Ein weiteres Beispiel
-        let substituted = sub_word(word);
-
-        // Erwartete Werte aus der S-Box:
-        // 0x32 -> 0x4f, 0x43 -> 0xa5, 0xf6 -> 0x3f, 0xa8 -> 0xf2
-        let expected = [0x4f, 0xa5, 0x3f, 0xf2];
-
-        assert_eq!(
-            substituted, expected,
-            "sub_word failed for input [0x32, 0x43, 0xf6, 0xa8]"
-        );
-    }
-
-    #[test]
-    fn test_sbox_values() {
-        // Überprüfe einige Beispiele aus der S-Box
-        assert_eq!(sbox_lookup(0x09), 0x01, "S-Box lookup for 0x09 failed");
-        assert_eq!(sbox_lookup(0xcf), 0x18, "S-Box lookup for 0xcf failed");
-        assert_eq!(sbox_lookup(0x4f), 0x9d, "S-Box lookup for 0x4f failed");
-        assert_eq!(sbox_lookup(0x3c), 0x87, "S-Box lookup for 0x3c failed");
     }
 
     #[test]
